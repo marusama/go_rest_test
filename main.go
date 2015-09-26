@@ -11,7 +11,7 @@ import (
 const (
 	ApiHost                  = ":8080"
 	AuthRealm                = "test_realm"
-	SessionDurationInMinutes = 1
+	SessionDurationInMinutes = 60
 )
 
 func main() {
