@@ -6,6 +6,7 @@ import (
 	"github.com/gocql/gocql"
 	"log"
 	"net/http"
+	"strconv"
 )
 
 // some options for API
@@ -20,23 +21,24 @@ const (
 
 func main() {
 	cluster := gocql.NewCluster(CassandraCluster)
-	cluster.Keyspace = "demo"
 	session, _ := cluster.CreateSession()
 	defer session.Close()
 
-	ensureDbSchema(session)
+	ensureInitDbSchema(session)
 
 	//runApiServer()
 }
 
-func ensureDbSchema(session *gocql.Session) {
+func ensureInitDbSchema(session *gocql.Session) {
 	queryCountTables := "SELECT COUNT(*) FROM system.schema_columnfamilies WHERE keyspace_name='" + Keyspace + "';"
 	var tableCount int
 	session.Query(queryCountTables).Scan(&tableCount)
+	fmt.Println("table count " + strconv.FormatInt(int64(tableCount), 10))
 	if tableCount == 0 {
-		queryCreateKeyspace := "CREATE KEYSPACE " + Keyspace + ";"
+		fmt.Println("Init schema")
+		queryCreateKeyspace := "CREATE KEYSPACE " + Keyspace + " WITH REPLICATION = { 'class' : 'SimpleStrategy', 'replication_factor' : 1 };"
 		queryCreateTableUsers := "CREATE TABLE " + Keyspace + ".users (login text, password text, PRIMARY KEY (login));"
-		queryCreateTableUserAuths := "CREATE TABLE " + Keyspace + ".user_auths (token text, login text, exp_time timestamp, PRIMARY KEY (login));"
+		queryCreateTableUserAuths := "CREATE TABLE " + Keyspace + ".user_auths (ftoken text, login text, exp_time int, PRIMARY KEY (login));"
 		session.Query(queryCreateKeyspace).Exec()
 		session.Query(queryCreateTableUsers).Exec()
 		session.Query(queryCreateTableUserAuths).Exec()
