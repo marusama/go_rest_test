@@ -8,6 +8,7 @@ import (
 )
 
 func main() {
+	// test config options
 	config := &Config{
 		CassandraCluster:             "127.0.0.1",
 		Keyspace:                     "test_rest",
@@ -18,20 +19,20 @@ func main() {
 
 	log.Println("Init...")
 
-	// connecting to cassandra db
+	// connect to cassandra db
 	dataConnector, err := NewDataConnector(config)
 	if err != nil {
 		log.Fatal(err)
 		return
 	}
 
-	// creating services
+	// create services
 	services, err := NewServices(dataConnector, config)
 	if err != nil {
 		log.Fatal(err)
 		return
 	}
 
-	// run API
+	// run API host
 	log.Fatal(RunApiServer(services, config))
 }

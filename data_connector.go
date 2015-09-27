@@ -5,14 +5,14 @@ import (
 	"log"
 )
 
+// Connector to Cassandra DB
 type DataConnector interface {
 	GetSession() *gocql.Session
 	GetKeyspace() string
 }
 
+// Simple data connector for demo. There is one predefined opened session.
 // TODO: errors handling, implement session pool, auto reconnect, close opened sessions
-// for simple demo there is one predefined opened session
-
 type SimpleDataConnector struct {
 	clusterAddress string
 	cluster        *gocql.ClusterConfig
@@ -20,6 +20,7 @@ type SimpleDataConnector struct {
 	keyspace       string
 }
 
+// Creates SimpleDataConnector.
 func NewDataConnector(config *Config) (dataConnector DataConnector, err error) {
 	simpleDataConnector := &SimpleDataConnector{}
 	simpleDataConnector.clusterAddress = config.CassandraCluster
@@ -33,10 +34,12 @@ func NewDataConnector(config *Config) (dataConnector DataConnector, err error) {
 	return
 }
 
+// Get database session.
 func (dc *SimpleDataConnector) GetSession() *gocql.Session {
 	return dc.session
 }
 
+// Get database keyspace.
 func (dc *SimpleDataConnector) GetKeyspace() string {
 	return dc.keyspace
 }

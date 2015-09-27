@@ -7,11 +7,13 @@ import (
 	"net/http"
 )
 
+// Run demo API host.
 func RunApiServer(services *Services, config *Config) error {
 	api := rest.NewApi()
+
 	//api.Use(rest.DefaultDevStack...)
 
-	// set middleware for authentication
+	// set middleware for authentications
 	api.Use(getAuthMiddleware(services, config.AuthRealm))
 
 	// router
@@ -25,7 +27,10 @@ func RunApiServer(services *Services, config *Config) error {
 	return http.ListenAndServe(config.ApiHost, api.MakeHandler())
 }
 
+// Get authentication middleware for REST API.
 func getAuthMiddleware(services *Services, authRealm string) rest.Middleware {
+
+	// token-based authentication
 	var tokenAuthMiddleware = &tokenauth.AuthTokenMiddleware{
 		Realm: authRealm,
 		Authenticator: func(token string) string {
@@ -42,6 +47,7 @@ func getAuthMiddleware(services *Services, authRealm string) rest.Middleware {
 		},
 	}
 
+	// basic access authentication
 	var basicAuthMiddleware = &rest.AuthBasicMiddleware{
 		Realm: authRealm,
 		Authenticator: func(user string, password string) bool {
@@ -53,9 +59,12 @@ func getAuthMiddleware(services *Services, authRealm string) rest.Middleware {
 		},
 	}
 
+	// return middleware func that selects appropriate auth middleware for different route paths.
 	return rest.MiddlewareSimple(func(handler rest.HandlerFunc) rest.HandlerFunc {
 		return func(w rest.ResponseWriter, request *rest.Request) {
 			path := request.URL.Path
+
+			// switch by path:
 			switch {
 
 			// no auth for registering new user
@@ -76,6 +85,7 @@ func getAuthMiddleware(services *Services, authRealm string) rest.Middleware {
 	})
 }
 
+// Get routes for REST API.
 func getRoutes(services *Services) []*rest.Route {
 	routes := []*rest.Route{}
 	routes = append(routes,
@@ -87,6 +97,7 @@ func getRoutes(services *Services) []*rest.Route {
 	return routes
 }
 
+// Handler for /register. Register new User.
 func register(s *Services, w rest.ResponseWriter, r *rest.Request) {
 	// decoding new user
 	user := User{}
@@ -113,9 +124,11 @@ func register(s *Services, w rest.ResponseWriter, r *rest.Request) {
 	})
 }
 
+// Handler for /login. Log in the client and return generated token.
 func login(s *Services, w rest.ResponseWriter, r *rest.Request) {
 	user := r.Env["REMOTE_USER"].(string)
 
+	// login. generates token and stores in UserAuth.
 	userAuth, err := s.UserAuthService.Set(user)
 
 	if err != nil {
@@ -128,6 +141,7 @@ func login(s *Services, w rest.ResponseWriter, r *rest.Request) {
 	w.WriteJson(userAuth)
 }
 
+// Handler for /auth_test. Test function that requires authorization. Return authed login.
 func auth_test(s *Services, w rest.ResponseWriter, r *rest.Request) {
 	user := r.Env["REMOTE_USER"].(string)
 	log.Println("Testing auth: " + user)
@@ -135,6 +149,7 @@ func auth_test(s *Services, w rest.ResponseWriter, r *rest.Request) {
 	w.WriteJson(map[string]string{"authed": user})
 }
 
+// Handler for /logout. Log out the client.
 func logout(s *Services, w rest.ResponseWriter, r *rest.Request) {
 	user := r.Env["REMOTE_USER"].(string)
 

@@ -5,17 +5,23 @@ import (
 	"log"
 )
 
+// Service for User.
 type UserService struct {
+
+	// Data service for User.
 	dataService *UserDataService
 }
 
+// Create new service for User.
 func NewUserService(dataConnector DataConnector) *UserService {
 	return &UserService{
 		dataService: &UserDataService{dataConnector: dataConnector},
 	}
 }
 
+// Save User in database.
 func (us *UserService) AddUser(user *User) error {
+	// check properties.
 	if user.Login == "" {
 		return errors.New("Login must be provided")
 	}
@@ -23,6 +29,7 @@ func (us *UserService) AddUser(user *User) error {
 		return errors.New("Password must be provided")
 	}
 
+	// search existing in db.
 	_, exists, err := us.dataService.Find(user.Login)
 	if err != nil {
 		return err
@@ -31,9 +38,11 @@ func (us *UserService) AddUser(user *User) error {
 		return errors.New("User with login '" + user.Login + "' already exists")
 	}
 
+	// save in db.
 	return us.dataService.Save(user)
 }
 
+// Try to find User with these login/password.
 func (us *UserService) CheckUser(login string, password string) bool {
 	if login == "" || password == "" {
 		return false

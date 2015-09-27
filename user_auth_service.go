@@ -5,11 +5,17 @@ import (
 	"time"
 )
 
+// Service for UserAuth.
 type UserAuthService struct {
+
+	// Auth session duration in minutes.
 	sessionDurationInMinutes int
-	dataService              *UserAuthDataService
+
+	// Data service.
+	dataService *UserAuthDataService
 }
 
+// Create new UserAuth service.
 func NewUserAuthService(dataConnector DataConnector, sessionDurationInMinutes int) *UserAuthService {
 	return &UserAuthService{
 		sessionDurationInMinutes: sessionDurationInMinutes,
@@ -17,6 +23,7 @@ func NewUserAuthService(dataConnector DataConnector, sessionDurationInMinutes in
 	}
 }
 
+// Create (or replace existing) and save in database UserAuth for User login.
 func (uas *UserAuthService) Set(login string) (userAuth *UserAuth, err error) {
 	// remove old auth info, if exist
 	err = uas.dataService.Remove(login)
@@ -35,23 +42,27 @@ func (uas *UserAuthService) Set(login string) (userAuth *UserAuth, err error) {
 	// set auth info
 	userAuth = &UserAuth{Token: token, Login: login, ExpTime: expTime}
 
+	// save in db.
 	err = uas.dataService.Save(userAuth)
 
 	return userAuth, err
 }
 
+// Find and return UserAuth data by token.
+// If the token is expired, UserAuth will be deleted and will not be returned.
 func (uas *UserAuthService) Get(token string) (userAuth *UserAuth, ok bool, err error) {
 	userAuth, ok, err = nil, false, nil
 	if token == "" {
 		return
 	}
 
-	// get userAuth data and check expiration
+	// get userAuth data
 	userAuth, ok, err = uas.dataService.FindByToken(token)
 	if err != nil {
 		return
 	}
 
+	// and check expiration
 	if ok && userAuth.ExpTime.Before(time.Now()) {
 		// remove expired token
 		uas.dataService.Remove(userAuth.Login)
@@ -62,6 +73,7 @@ func (uas *UserAuthService) Get(token string) (userAuth *UserAuth, ok bool, err 
 	return
 }
 
+// Remove stored UserAuth by login.
 func (uas *UserAuthService) Remove(login string) error {
 	return uas.dataService.Remove(login)
 }

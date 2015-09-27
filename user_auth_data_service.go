@@ -5,10 +5,14 @@ import (
 	"time"
 )
 
+// Data service for user authentication.
 type UserAuthDataService struct {
+
+	// Connector to database.
 	dataConnector DataConnector
 }
 
+// Save UserAuth in database.
 func (ds *UserAuthDataService) Save(userAuth *UserAuth) error {
 	query := "INSERT INTO " +
 		ds.dataConnector.GetKeyspace() + ".user_auths (ftoken, login, exp_time) " +
@@ -20,6 +24,7 @@ func (ds *UserAuthDataService) Save(userAuth *UserAuth) error {
 	return ds.dataConnector.GetSession().Query(query).Exec()
 }
 
+// Find UserAuth by login.
 func (ds *UserAuthDataService) FindByLogin(login string) (userAuth *UserAuth, ok bool, err error) {
 	query := "SELECT ftoken, login, exp_time FROM " + ds.dataConnector.GetKeyspace() + ".user_auths " +
 		"WHERE login = '" + login + "'"
@@ -39,6 +44,7 @@ func (ds *UserAuthDataService) FindByLogin(login string) (userAuth *UserAuth, ok
 	return &UserAuth{Token: dbToken, Login: dbLogin, ExpTime: time.Unix(dbExpTime, 0)}, true, nil
 }
 
+// Find stored UserAuth by token.
 func (ds *UserAuthDataService) FindByToken(token string) (userAuth *UserAuth, ok bool, err error) {
 	query := "SELECT ftoken, login, exp_time FROM " + ds.dataConnector.GetKeyspace() + ".user_auths " +
 		"WHERE ftoken = '" + token + "'"
@@ -58,6 +64,7 @@ func (ds *UserAuthDataService) FindByToken(token string) (userAuth *UserAuth, ok
 	return &UserAuth{Token: dbToken, Login: dbLogin, ExpTime: time.Unix(dbExpTime, 0)}, true, nil
 }
 
+// Remove UserAuth by login.
 func (ds *UserAuthDataService) Remove(login string) error {
 	query := "DELETE FROM " + ds.dataConnector.GetKeyspace() + ".user_auths " +
 		"WHERE login = '" + login + "'"

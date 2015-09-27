@@ -4,17 +4,26 @@ import (
 	"log"
 )
 
+// Backend services.
 type Services struct {
-	UserService     *UserService
+
+	// User service.
+	UserService *UserService
+
+	// UserAuth service.
 	UserAuthService *UserAuthService
 }
 
+// Creates new services.
 func NewServices(dataConnector DataConnector, config *Config) (services *Services, err error) {
+
+	// check and create Cassandra database schema if needed.
 	err = ensureInitDbSchema(dataConnector, config)
 	if err != nil {
 		return
 	}
 
+	// create new services.
 	services = &Services{}
 	services.UserService = NewUserService(dataConnector)
 	services.UserAuthService = NewUserAuthService(dataConnector, config.AuthSessionDurationInMinutes)
@@ -22,6 +31,7 @@ func NewServices(dataConnector DataConnector, config *Config) (services *Service
 	return
 }
 
+// Check database schema.
 // TODO: use migration tools
 func ensureInitDbSchema(dataConnector DataConnector, config *Config) error {
 	keyspace := config.Keyspace
