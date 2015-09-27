@@ -9,7 +9,7 @@ type Services struct {
 	UserAuthService *UserAuthService
 }
 
-func NewServices(dataConnector *DataConnector, config *Config) (services *Services, err error) {
+func NewServices(dataConnector DataConnector, config *Config) (services *Services, err error) {
 	err = ensureInitDbSchema(dataConnector, config)
 	if err != nil {
 		return
@@ -23,7 +23,7 @@ func NewServices(dataConnector *DataConnector, config *Config) (services *Servic
 }
 
 // TODO: use migration tools
-func ensureInitDbSchema(dataConnector *DataConnector, config *Config) error {
+func ensureInitDbSchema(dataConnector DataConnector, config *Config) error {
 	keyspace := config.Keyspace
 
 	queryCountTables := "SELECT COUNT(*) FROM system.schema_columnfamilies WHERE keyspace_name='" + keyspace + "';"

@@ -2,17 +2,18 @@ package main
 
 import (
 	"errors"
+	"log"
 	"sync"
 )
 
 type UserService struct {
 	sync.RWMutex
-	Store map[string]*User
+	dataService *UserDataService
 }
 
-func NewUserService(dataConnector *DataConnector) *UserService {
+func NewUserService(dataConnector DataConnector) *UserService {
 	return &UserService{
-		Store: map[string]*User{},
+		dataService: &UserDataService{dataConnector: dataConnector},
 	}
 }
 
@@ -27,13 +28,15 @@ func (us *UserService) AddUser(user *User) error {
 	us.Lock()
 	defer us.Unlock()
 
-	_, exists := us.Store[user.Login]
+	_, exists, err := us.dataService.Find(user.Login)
+	if err != nil {
+		return err
+	}
 	if exists {
 		return errors.New("User with login '" + user.Login + "' already exists")
 	}
 
-	us.Store[user.Login] = user
-	return nil
+	return us.dataService.Save(user)
 }
 
 func (us *UserService) CheckUser(login string, password string) bool {
@@ -44,7 +47,11 @@ func (us *UserService) CheckUser(login string, password string) bool {
 	us.RLock()
 	defer us.RUnlock()
 
-	v, ok := us.Store[login]
+	v, ok, err := us.dataService.Find(login)
+	if err != nil {
+		log.Fatal(err)
+		return false
+	}
 	if ok {
 		return v.Password == password
 	}

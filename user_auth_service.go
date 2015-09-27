@@ -13,7 +13,7 @@ type UserAuthService struct {
 	TokenToUserAuth          map[string]*UserAuth
 }
 
-func NewUserAuthService(dataConnector *DataConnector, sessionDurationInMinutes int) *UserAuthService {
+func NewUserAuthService(dataConnector DataConnector, sessionDurationInMinutes int) *UserAuthService {
 	return &UserAuthService{
 		sessionDurationInMinutes: sessionDurationInMinutes,
 		LoginToUserAuth:          map[string]*UserAuth{},
