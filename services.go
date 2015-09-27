@@ -58,6 +58,13 @@ func ensureInitDbSchema(dataConnector DataConnector, config *Config) error {
 		if err != nil {
 			return err
 		}
+
+		// secondary index for search by token
+		querySecondaryIndexUserAuths := "CREATE INDEX user_auths_token_idx ON " + keyspace + ".user_auths (ftoken)"
+		dataConnector.GetSession().Query(querySecondaryIndexUserAuths).Exec()
+		if err != nil {
+			return err
+		}
 	}
 
 	return nil

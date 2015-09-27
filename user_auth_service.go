@@ -2,31 +2,27 @@ package main
 
 import (
 	"github.com/grayj/go-json-rest-middleware-tokenauth"
-	"sync"
 	"time"
 )
 
 type UserAuthService struct {
-	sync.RWMutex
 	sessionDurationInMinutes int
-	LoginToUserAuth          map[string]*UserAuth
-	TokenToUserAuth          map[string]*UserAuth
+	dataService              *UserAuthDataService
 }
 
 func NewUserAuthService(dataConnector DataConnector, sessionDurationInMinutes int) *UserAuthService {
 	return &UserAuthService{
 		sessionDurationInMinutes: sessionDurationInMinutes,
-		LoginToUserAuth:          map[string]*UserAuth{},
-		TokenToUserAuth:          map[string]*UserAuth{},
+		dataService:              &UserAuthDataService{dataConnector: dataConnector},
 	}
 }
 
 func (uas *UserAuthService) Set(login string) (userAuth *UserAuth, err error) {
-	uas.Lock()
-	defer uas.Unlock()
-
 	// remove old auth info, if exist
-	uas.removeByLogin(login)
+	err = uas.dataService.Remove(login)
+	if err != nil {
+		return
+	}
 
 	// generate token and expiration datetime
 	token, err := tokenauth.New()
@@ -38,26 +34,27 @@ func (uas *UserAuthService) Set(login string) (userAuth *UserAuth, err error) {
 
 	// set auth info
 	userAuth = &UserAuth{Token: token, Login: login, ExpTime: expTime}
-	uas.LoginToUserAuth[login] = userAuth
-	uas.TokenToUserAuth[token] = userAuth
 
-	return
+	err = uas.dataService.Save(userAuth)
+
+	return userAuth, err
 }
 
-func (uas *UserAuthService) Get(token string) (userAuth *UserAuth, ok bool) {
-	userAuth, ok = nil, false
+func (uas *UserAuthService) Get(token string) (userAuth *UserAuth, ok bool, err error) {
+	userAuth, ok, err = nil, false, nil
 	if token == "" {
 		return
 	}
 
-	uas.RLock()
-	defer uas.RUnlock()
-
 	// get userAuth data and check expiration
-	userAuth, ok = uas.TokenToUserAuth[token]
+	userAuth, ok, err = uas.dataService.FindByToken(token)
+	if err != nil {
+		return
+	}
+
 	if ok && userAuth.ExpTime.Before(time.Now()) {
 		// remove expired token
-		uas.removeByToken(token)
+		uas.dataService.Remove(userAuth.Login)
 		userAuth = nil
 		ok = false
 	}
@@ -65,25 +62,6 @@ func (uas *UserAuthService) Get(token string) (userAuth *UserAuth, ok bool) {
 	return
 }
 
-func (uas *UserAuthService) Remove(login string) {
-	uas.Lock()
-	defer uas.Unlock()
-
-	uas.removeByLogin(login)
-}
-
-func (uas *UserAuthService) removeByLogin(login string) {
-	userAuth, ok := uas.LoginToUserAuth[login]
-	if ok {
-		delete(uas.TokenToUserAuth, userAuth.Token)
-		delete(uas.LoginToUserAuth, userAuth.Login)
-	}
-}
-
-func (uas *UserAuthService) removeByToken(token string) {
-	userAuth, ok := uas.TokenToUserAuth[token]
-	if ok {
-		delete(uas.TokenToUserAuth, userAuth.Token)
-		delete(uas.LoginToUserAuth, userAuth.Login)
-	}
+func (uas *UserAuthService) Remove(login string) error {
+	return uas.dataService.Remove(login)
 }

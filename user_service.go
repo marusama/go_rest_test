@@ -3,11 +3,9 @@ package main
 import (
 	"errors"
 	"log"
-	"sync"
 )
 
 type UserService struct {
-	sync.RWMutex
 	dataService *UserDataService
 }
 
@@ -25,9 +23,6 @@ func (us *UserService) AddUser(user *User) error {
 		return errors.New("Password must be provided")
 	}
 
-	us.Lock()
-	defer us.Unlock()
-
 	_, exists, err := us.dataService.Find(user.Login)
 	if err != nil {
 		return err
@@ -43,9 +38,6 @@ func (us *UserService) CheckUser(login string, password string) bool {
 	if login == "" || password == "" {
 		return false
 	}
-
-	us.RLock()
-	defer us.RUnlock()
 
 	v, ok, err := us.dataService.Find(login)
 	if err != nil {

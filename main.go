@@ -15,7 +15,7 @@ func main() {
 
 	log.Println("Init...")
 
-	// connecting to db
+	// connecting to cassandra db
 	dataConnector, err := NewDataConnector(config)
 	if err != nil {
 		log.Fatal(err)

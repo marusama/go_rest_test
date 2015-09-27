@@ -29,7 +29,11 @@ func getAuthMiddleware(services *Services, authRealm string) rest.Middleware {
 	var tokenAuthMiddleware = &tokenauth.AuthTokenMiddleware{
 		Realm: authRealm,
 		Authenticator: func(token string) string {
-			userAuth, ok := services.UserAuthService.Get(token)
+			userAuth, ok, err := services.UserAuthService.Get(token)
+			if err != nil {
+				log.Fatal(err)
+				return ""
+			}
 			if !ok {
 				log.Println("Expired or invalid token: " + token)
 				return ""
