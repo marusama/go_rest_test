@@ -1,3 +1,6 @@
+/*
+Simple rest API server. Allows to register new user, client log in, check whether client is logged in, and log out.
+*/
 package main
 
 import (

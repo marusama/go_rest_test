@@ -92,7 +92,7 @@ func register(s *Services, w rest.ResponseWriter, r *rest.Request) {
 	user := User{}
 	err := r.DecodeJsonPayload(&user)
 	if err != nil {
-		rest.Error(w, err.Error(), http.StatusInternalServerError)
+		rest.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
