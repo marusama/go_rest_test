@@ -1,13 +1,13 @@
 # go-rest-test
 
-Simple REST API demo server written on go (golang) uses Cassandra as storage.
+Simple REST API demo server written on Go (golang) uses Cassandra as storage.
 Demonstrates base authorization and authentication with token.
 
 A client can register new user, log in, call authorization required test function, and log out.
 
 ## Used libraries:
-- github.com/ant0ine/go-json-rest - A quick and easy way to setup a RESTful JSON API.
-- github.com/grayj/go-json-rest-middleware-tokenauth - Token authentication middleware for go-json-rest.
+- https://github.com/ant0ine/go-json-rest - A quick and easy way to setup a RESTful JSON API.
+- https://github.com/grayj/go-json-rest-middleware-tokenauth - Token authentication middleware for go-json-rest.
 - https://github.com/gocql/gocql - Package gocql implements a fast and robust Cassandra client for the Go programming language. 
 
 ## API methods:
