@@ -10,7 +10,7 @@ type UserService struct {
 	Store map[string]*User
 }
 
-func NewUserService() *UserService {
+func NewUserService(dataConnector *DataConnector) *UserService {
 	return &UserService{
 		Store: map[string]*User{},
 	}

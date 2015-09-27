@@ -8,14 +8,16 @@ import (
 
 type UserAuthService struct {
 	sync.RWMutex
-	LoginToUserAuth map[string]*UserAuth
-	TokenToUserAuth map[string]*UserAuth
+	sessionDurationInMinutes int
+	LoginToUserAuth          map[string]*UserAuth
+	TokenToUserAuth          map[string]*UserAuth
 }
 
-func NewUserAuthService() *UserAuthService {
+func NewUserAuthService(dataConnector *DataConnector, sessionDurationInMinutes int) *UserAuthService {
 	return &UserAuthService{
-		LoginToUserAuth: map[string]*UserAuth{},
-		TokenToUserAuth: map[string]*UserAuth{},
+		sessionDurationInMinutes: sessionDurationInMinutes,
+		LoginToUserAuth:          map[string]*UserAuth{},
+		TokenToUserAuth:          map[string]*UserAuth{},
 	}
 }
 
@@ -32,7 +34,7 @@ func (uas *UserAuthService) Set(login string) (userAuth *UserAuth, err error) {
 		return
 	}
 	token = tokenauth.Hash(token)
-	expTime := time.Now().Add(SessionDurationInMinutes * time.Minute)
+	expTime := time.Now().Add(time.Duration(uas.sessionDurationInMinutes) * time.Minute)
 
 	// set auth info
 	userAuth = &UserAuth{Token: token, Login: login, ExpTime: expTime}

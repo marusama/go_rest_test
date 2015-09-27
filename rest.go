@@ -7,16 +7,29 @@ import (
 	"net/http"
 )
 
-var (
-	userService     = NewUserService()
-	userAuthService = NewUserAuthService()
-)
+func RunApiServer(services *Services, config *Config) error {
+	api := rest.NewApi()
+	//api.Use(rest.DefaultDevStack...)
 
-func GetAuthMiddleware() rest.Middleware {
+	// set middleware for authentication
+	api.Use(getAuthMiddleware(services, config.AuthRealm))
+
+	// router
+	router, err := rest.MakeRouter(getRoutes(services)...)
+	if err != nil {
+		return err
+	}
+	api.SetApp(router)
+
+	log.Println("Starting to listen " + config.ApiHost + "...")
+	return http.ListenAndServe(config.ApiHost, api.MakeHandler())
+}
+
+func getAuthMiddleware(services *Services, authRealm string) rest.Middleware {
 	var tokenAuthMiddleware = &tokenauth.AuthTokenMiddleware{
-		Realm: AuthRealm,
+		Realm: authRealm,
 		Authenticator: func(token string) string {
-			userAuth, ok := userAuthService.Get(token)
+			userAuth, ok := services.UserAuthService.Get(token)
 			if !ok {
 				log.Println("Expired or invalid token: " + token)
 				return ""
@@ -26,9 +39,9 @@ func GetAuthMiddleware() rest.Middleware {
 	}
 
 	var basicAuthMiddleware = &rest.AuthBasicMiddleware{
-		Realm: AuthRealm,
+		Realm: authRealm,
 		Authenticator: func(user string, password string) bool {
-			ok := userService.CheckUser(user, password)
+			ok := services.UserService.CheckUser(user, password)
 			if !ok {
 				log.Println("Failed login for user: '" + user + "', password: '" + password + "'")
 			}
@@ -59,18 +72,18 @@ func GetAuthMiddleware() rest.Middleware {
 	})
 }
 
-func GetRoutes() []*rest.Route {
+func getRoutes(services *Services) []*rest.Route {
 	routes := []*rest.Route{}
 	routes = append(routes,
-		rest.Post("/register", register),
-		rest.Post("/login", login),
-		rest.Get("/auth_test", auth_test),
-		rest.Post("/logout", logout),
+		rest.Post("/register", func(w rest.ResponseWriter, r *rest.Request) { register(services, w, r) }),
+		rest.Post("/login", func(w rest.ResponseWriter, r *rest.Request) { login(services, w, r) }),
+		rest.Get("/auth_test", func(w rest.ResponseWriter, r *rest.Request) { auth_test(services, w, r) }),
+		rest.Post("/logout", func(w rest.ResponseWriter, r *rest.Request) { logout(services, w, r) }),
 	)
 	return routes
 }
 
-func register(w rest.ResponseWriter, r *rest.Request) {
+func register(s *Services, w rest.ResponseWriter, r *rest.Request) {
 	// decoding new user
 	user := User{}
 	err := r.DecodeJsonPayload(&user)
@@ -81,7 +94,7 @@ func register(w rest.ResponseWriter, r *rest.Request) {
 
 	// trying to add user
 	log.Println("Registering user: " + user.Login)
-	err = userService.AddUser(&user)
+	err = s.UserService.AddUser(&user)
 	if err != nil {
 		log.Println("Register error: " + err.Error())
 		rest.Error(w, err.Error(), http.StatusBadRequest)
@@ -96,10 +109,10 @@ func register(w rest.ResponseWriter, r *rest.Request) {
 	})
 }
 
-func login(w rest.ResponseWriter, r *rest.Request) {
+func login(s *Services, w rest.ResponseWriter, r *rest.Request) {
 	user := r.Env["REMOTE_USER"].(string)
 
-	userAuth, err := userAuthService.Set(user)
+	userAuth, err := s.UserAuthService.Set(user)
 
 	if err != nil {
 		log.Println("Login error: " + err.Error())
@@ -111,17 +124,17 @@ func login(w rest.ResponseWriter, r *rest.Request) {
 	w.WriteJson(userAuth)
 }
 
-func auth_test(w rest.ResponseWriter, r *rest.Request) {
+func auth_test(s *Services, w rest.ResponseWriter, r *rest.Request) {
 	user := r.Env["REMOTE_USER"].(string)
 	log.Println("Testing auth: " + user)
 
 	w.WriteJson(map[string]string{"authed": user})
 }
 
-func logout(w rest.ResponseWriter, r *rest.Request) {
+func logout(s *Services, w rest.ResponseWriter, r *rest.Request) {
 	user := r.Env["REMOTE_USER"].(string)
 
-	userAuthService.Remove(user)
+	s.UserAuthService.Remove(user)
 
 	log.Println("Logged out: " + user)
 	w.WriteJson(map[string]string{"status": "OK"})

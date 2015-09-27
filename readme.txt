@@ -25,7 +25,7 @@ HTTP/1.1 200 OK
 	"exp_time" : "2015-09-26T21:22:40.1764963+03:00"
 }
 
-3. Testing that we are authorized using the token:
+3. Testing that we are authorized using this token:
 
 curl -i -H "Authorization: Token LcJWsc6Fu4bcWgd4ZkCUEQ==" http://localhost:8080/auth_test
 
@@ -35,6 +35,10 @@ HTTP/1.1 200 OK
 {
     "authed" : "admin"
 }
+
+If you are not authorized or token is expired:
+HTTP/1.1 401 Unauthorized
+...
 
 4. Logging out:
 
